@@ -1,10 +1,11 @@
 import os
 import nextcord
 from nextcord.ext import commands
-from nextcord import Interaction
-from utils import load_permissions, save_permissions
+from nextcord import Interaction, SlashOption
+from permissions import load_permissions, save_permissions
 
 ADMIN_ROLE_ID = int(os.getenv('ANILY_BOT_ADMIN_ROLE_ID', 0))
+CATEGORIES = os.getenv('ANILY_BOT_CATEGORIES', 'souly,anime,joni,other').split(',')
 
 class AdminCog(commands.Cog):
     def __init__(self, bot):
@@ -18,40 +19,45 @@ class AdminCog(commands.Cog):
         return True
 
     @nextcord.slash_command(name="add_permission", description="Grant permission to upload/update maps")
-    async def add_permission(self, interaction: Interaction, user_id: int, category: str):
+    async def add_permission(self, interaction: Interaction, 
+                             user: nextcord.Member = SlashOption(name="member", required=True), 
+                             category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
         permissions = load_permissions()
         
-        if str(user_id) not in permissions:
-            permissions[str(user_id)] = []
+        if str(user.id) not in permissions:
+            permissions[str(user.id)] = []
         
-        if category not in permissions[str(user_id)]:
-            permissions[str(user_id)].append(category)
+        if category not in permissions[str(user.id)]:
+            permissions[str(user.id)].append(category)
             save_permissions(permissions)
-            await interaction.response.send_message(f"Permission added for user {user_id} in category {category}.")
+            await interaction.response.send_message(f"Permission added for user {user.mention} in category {category}.")
         else:
-            await interaction.response.send_message(f"User {user_id} already has permission for category {category}.", ephemeral=True)
+            await interaction.response.send_message(f"User {user.mention} already has permission for category {category}.", ephemeral=True)
 
     @nextcord.slash_command(name="remove_permission", description="Revoke permission to upload/update maps")
-    async def remove_permission(self, interaction: Interaction, user_id: int, category: str):
+    async def remove_permission(self, interaction: Interaction, 
+                                user: nextcord.Member = SlashOption(name="member", required=True), 
+                                category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
         permissions = load_permissions()
         
-        if str(user_id) in permissions and category in permissions[str(user_id)]:
-            permissions[str(user_id)].remove(category)
+        if str(user.id) in permissions and category in permissions[str(user.id)]:
+            permissions[str(user.id)].remove(category)
             save_permissions(permissions)
-            await interaction.response.send_message(f"Permission removed for user {user_id} in category {category}.")
+            await interaction.response.send_message(f"Permission removed for user {user.mention} in category {category}.")
         else:
-            await interaction.response.send_message(f"User {user_id} does not have permission for category {category}.", ephemeral=True)
+            await interaction.response.send_message(f"User {user.mention} does not have permission for category {category}.", ephemeral=True)
 
     @nextcord.slash_command(name="list_permissions", description="List all permissions for a user")
-    async def list_permissions(self, interaction: Interaction, user_id: int):
+    async def list_permissions(self, 
+                               interaction: Interaction, 
+                               user: nextcord.Member = SlashOption(name="member", required=True)):
         permissions = load_permissions()
         
-        if str(user_id) in permissions:
-            categories = ", ".join(permissions[str(user_id)])
-            await interaction.response.send_message(f"User {user_id} has permissions for categories: {categories}.")
+        if str(user.id) in permissions:
+            categories = ", ".join(permissions[str(user.id)])
+            await interaction.response.send_message(f"User {user.mention} has permissions for categories: {categories}.")
         else:
-            await interaction.response.send_message(f"User {user_id} has no permissions.", ephemeral=True)
+            await interaction.response.send_message(f"User {user.mention} has no permissions.")
 
-# Setup
 def setup(bot):
     bot.add_cog(AdminCog(bot))
