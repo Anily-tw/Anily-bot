@@ -65,15 +65,16 @@ class MapCog(commands.Cog):
             await self.log_channel.send(move_error)
             return
 
-        stars_str = ":star:" * int(stars)
-        message = f"\"**{map_name}**\" by **{mapper}** released on **{category}** {stars_str} with **{points}** points."
-        data = {"content": message}
-        requests.post(WEBHOOK_URL, json=data)
+        if category != 'test':
+            stars_str = ":star:" * int(stars)
+            message = f"\"**{map_name}**\" by **{mapper}** released on **{category}** {stars_str} with **{points}** points."
+            data = {"content": message}
+            requests.post(WEBHOOK_URL, json=data)
 
         try:
             with open(f"{ROOT_FOLDER}/types/{category}/votes.cfg", "a") as vote_file:
                 vote_line = f'add_vote "{map_name}" "sv_reset_file types/{category}/flexreset.cfg; change_map \\"{category}/{map_name}\\""\n'
-                if category == 'other':
+                if category == 'other' or category == 'test':
                     vote_line = f'add_vote "{map_name} | by {mapper}" "sv_reset_file types/{category}/flexreset.cfg; change_map \\"{category}/{map_name}\\""\n'
                 vote_file.write(vote_line)
             await self.log_channel.send(f"Vote for map '{map_name}' added to '{category}' category.")
