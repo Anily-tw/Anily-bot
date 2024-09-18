@@ -90,6 +90,7 @@ class MapCog(commands.Cog):
 
     @nextcord.slash_command(name="update_map", description="Update existing map")
     async def update_map(self, interaction: Interaction, 
+                         map_file: nextcord.Attachment = SlashOption(name="map", description="File", required=True),
                          map_name: str = SlashOption(name="map_name", description="Name of map displayed in votes", required=True), 
                          category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
 
@@ -98,11 +99,10 @@ class MapCog(commands.Cog):
             await interaction.response.send_message("You don't have permission to update maps in this category.", ephemeral=True)
             return
 
-        if not interaction.message.attachments:
+        if not map_file:
             await interaction.response.send_message("Please attach .map file to the message.", ephemeral=True)
             return
 
-        map_file = interaction.message.attachments[0]
         if not map_file.filename.endswith(".map"):
             await interaction.response.send_message("Wrong file format, .map file needed.", ephemeral=True)
             return
