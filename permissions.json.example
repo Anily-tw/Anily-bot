@@ -1,0 +1,16 @@
+{
+  "permissions": [
+    {
+      "user_id": 123456789012345678,
+      "allowed_categories": ["souly", "anime"]
+    },
+    {
+      "user_id": 987654321098765432,
+      "allowed_categories": ["joni", "other"]
+    },
+    {
+      "user_id": 112233445566778899,
+      "allowed_categories": ["souly", "other"]
+    }
+  ]
+}
