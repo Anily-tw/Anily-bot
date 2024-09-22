@@ -21,7 +21,6 @@ async def on_ready():
     bot.load_extension("cogs.maps")
     bot.load_extension("cogs.admin")
     bot.load_extension("cogs.stats")
-    await bot.discover_application_commands()
     await bot.sync_all_application_commands()
     logger.info(f"{len(bot.get_all_application_commands())} slash commands are synced")
 
