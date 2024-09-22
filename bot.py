@@ -18,9 +18,10 @@ bot = commands.Bot(command_prefix="%", intents=intents)
 @bot.event
 async def on_ready():
     logger.info(f"Logged in as {bot.user}")
-    bot.load_extension("cogs.maps")
     bot.load_extension("cogs.admin")
+    bot.load_extension("cogs.maps")
     bot.load_extension("cogs.stats")
+    bot.load_extension("cogs.bans")
     await bot.sync_all_application_commands()
     logger.info(f"{len(bot.get_all_application_commands())} slash commands are synced")
 

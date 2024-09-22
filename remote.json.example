@@ -1,0 +1,16 @@
+{
+    "servers": [
+        {
+            "name": "useless",
+            "ip": "host",
+            "port": "port",
+            "username": "user1",
+            "password": "password1",
+            "pkey_path": "/path/to/key",
+            "maps_path": "/path/to/maps",
+            "bans_path": "/path/to/global-bans.cfg",
+            "build_votes": "/path/to/build_votes.py",
+            "execute_all": "/path/to/execute_all.sh"
+        }
+    ]
+}

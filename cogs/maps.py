@@ -58,6 +58,9 @@ class MapCog(commands.Cog):
         map_path = os.path.join(MAPS_FOLDER, f"{category}/{map_name}.map")
         await utils.save_map_file(map_file, map_path)
 
+        config = utils.load_config("remote.json")
+        utils.upload_map_to_servers(config['servers'], map_path, f"{category}/{map_name}.map")
+
         if category != 'test':
             error, connection, cursor = utils.insert_map_into_db(map_name, category, points, stars, mapper, release_date)
             if error:
@@ -86,7 +89,7 @@ class MapCog(commands.Cog):
             if close_message:
                 await self.log_channel.send(close_message)
             exec(open(os.path.join(ROOT_FOLDER, f"build_votes.py")).read())
-
+            utils.run_build_votes_servers(config['servers'])
         await interaction.response.send_message(
             f"Map '{map_name}' uploaded. Category: '{category}', Mapper: '{mapper}', Points: {points}, Stars: {stars}, Release date: {release_date}"
         )

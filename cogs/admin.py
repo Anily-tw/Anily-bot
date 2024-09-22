@@ -22,6 +22,10 @@ class AdminCog(commands.Cog):
     async def add_permission(self, interaction: Interaction, 
                              user: nextcord.Member = SlashOption(name="member", required=True), 
                              category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
+        has_perm = await self.cog_check(interaction)
+        if not has_perm:
+            return
+        
         permissions = load_permissions()
         
         if str(user.id) not in permissions:
@@ -38,6 +42,9 @@ class AdminCog(commands.Cog):
     async def remove_permission(self, interaction: Interaction, 
                                 user: nextcord.Member = SlashOption(name="member", required=True), 
                                 category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
+        has_perm = await self.cog_check(interaction)
+        if not has_perm:
+            return
         permissions = load_permissions()
         
         if str(user.id) in permissions and category in permissions[str(user.id)]:
@@ -51,6 +58,9 @@ class AdminCog(commands.Cog):
     async def list_permissions(self, 
                                interaction: Interaction, 
                                user: nextcord.Member = SlashOption(name="member", required=True)):
+        has_perm = await self.cog_check(interaction)
+        if not has_perm:
+            return
         permissions = load_permissions()
         
         if str(user.id) in permissions:
