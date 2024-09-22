@@ -18,7 +18,7 @@ class AdminCog(commands.Cog):
             return False
         return True
 
-    @nextcord.slash_command(name="add_permission", description="Grant permission to upload/update maps")
+    @nextcord.slash_command(name="add_permission", description="Grant permission to upload/update maps", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
     async def add_permission(self, interaction: Interaction, 
                              user: nextcord.Member = SlashOption(name="member", required=True), 
                              category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
@@ -34,7 +34,7 @@ class AdminCog(commands.Cog):
         else:
             await interaction.response.send_message(f"User {user.mention} already has permission for category {category}.", ephemeral=True)
 
-    @nextcord.slash_command(name="remove_permission", description="Revoke permission to upload/update maps")
+    @nextcord.slash_command(name="remove_permission", description="Revoke permission to upload/update maps", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
     async def remove_permission(self, interaction: Interaction, 
                                 user: nextcord.Member = SlashOption(name="member", required=True), 
                                 category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
@@ -47,7 +47,7 @@ class AdminCog(commands.Cog):
         else:
             await interaction.response.send_message(f"User {user.mention} does not have permission for category {category}.", ephemeral=True)
 
-    @nextcord.slash_command(name="list_permissions", description="List all permissions for a user")
+    @nextcord.slash_command(name="list_permissions", description="List all permissions for a user", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
     async def list_permissions(self, 
                                interaction: Interaction, 
                                user: nextcord.Member = SlashOption(name="member", required=True)):

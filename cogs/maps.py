@@ -32,10 +32,10 @@ class MapCog(commands.Cog):
             return False
         return True
 
-    @nextcord.slash_command(name="upload_map", description="Upload new map to the server")
+    @nextcord.slash_command(name="upload_map", description="Upload new map to the server", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
     async def upload_map(self, interaction: Interaction, 
                          map_file: nextcord.Attachment = SlashOption(name="map", description="File", required=True),
-                         map_name: str = SlashOption(name="map_name", description="Name of map displayed in votes", required=True),
+                         map_name: str = SlashOption(name="map_name", description="Name of map", required=True),
                          category: str = SlashOption(name="category", choices=CATEGORIES, required=True),
                          mapper: str = SlashOption(name="mapper", required=True, default=DEFAULT_MAPPER), 
                          points: int = SlashOption(name="points", required=True, default=DEFAULT_POINTS, min_value=0), 
@@ -58,14 +58,14 @@ class MapCog(commands.Cog):
         map_path = os.path.join(MAPS_FOLDER, f"{category}/{map_name}.map")
         await utils.save_map_file(map_file, map_path)
 
-        error, connection, cursor = utils.insert_map_into_db(map_name, category, points, stars, mapper, release_date)
-        if error:
-            await self.log_channel.send(f"Error while connecting to MySQL: {error}")
-            move_error = utils.move_file_on_error(map_path, f"{MAPS_FOLDER}/errors/")
-            await self.log_channel.send(move_error)
-            return
-
         if category != 'test':
+            error, connection, cursor = utils.insert_map_into_db(map_name, category, points, stars, mapper, release_date)
+            if error:
+                await self.log_channel.send(f"Error while connecting to MySQL: {error}")
+                move_error = utils.move_file_on_error(map_path, f"{MAPS_FOLDER}/errors/")
+                await self.log_channel.send(move_error)
+                return
+
             stars_str = ":star:" * int(stars)
             message = f"\"**{map_name}**\" by **{mapper}** released on **{category}** {stars_str} with **{points}** points."
             data = {"content": message}
@@ -81,15 +81,33 @@ class MapCog(commands.Cog):
         except OSError as e:
             await self.log_channel.send(f"Error writing to votes.cfg: {e}")
 
-        close_message = utils.close_db_connection(connection, cursor)
-        if close_message:
-            await self.log_channel.send(close_message)
+        if category != 'test':
+            close_message = utils.close_db_connection(connection, cursor)
+            if close_message:
+                await self.log_channel.send(close_message)
+            exec(open(os.path.join(ROOT_FOLDER, f"build_votes.py")).read())
 
         await interaction.response.send_message(
-            f"Map '{map_name}' uploaded. Category: {category}, Mapper: {mapper}, Points: {points}, Stars: {stars}, Release date: {release_date}"
+            f"Map '{map_name}' uploaded. Category: '{category}', Mapper: '{mapper}', Points: {points}, Stars: {stars}, Release date: {release_date}"
         )
 
-    @nextcord.slash_command(name="update_map", description="Update existing map")
+    @nextcord.slash_command(name="get_map", description="Download current version of the map", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
+    async def get_map(self, interaction: Interaction, 
+                         map_name: str = SlashOption(name="map_name", description="Name of map", required=True),
+                         category: str = SlashOption(name="category", choices=CATEGORIES, required=True)):
+        
+        map_path = os.path.join(MAPS_FOLDER, f"{category}/{map_name}.map")
+
+        if utils.file_exists(map_path):
+            await interaction.response.send_message(
+                f"Map '{map_name}'. Category: {category}", file=nextcord.File(open(map_path, "rb"))
+            )
+        else:
+            await interaction.response.send_message(
+                f"Map '{map_name}' doesn't exist in '{category}'"
+            )
+
+    @nextcord.slash_command(name="update_map", description="Update existing map", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
     async def update_map(self, interaction: Interaction, 
                          map_file: nextcord.Attachment = SlashOption(name="map", description="File", required=True),
                          map_name: str = SlashOption(name="map_name", description="Name of map displayed in votes", required=True), 

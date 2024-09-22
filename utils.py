@@ -7,6 +7,9 @@ def ensure_directory_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+def file_exists(path):
+    return os.path.exists(path)
+
 async def save_map_file(map_file, map_path):
     await map_file.save(map_path)
 
