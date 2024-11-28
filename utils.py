@@ -4,6 +4,7 @@ import mysql.connector
 from mysql.connector import Error
 import shutil
 import paramiko
+import logging
 
 def load_config(config_file):
     with open(config_file, 'r') as file:
@@ -61,7 +62,11 @@ def run_build_votes_servers(servers):
     for server in servers:
         private_key = paramiko.RSAKey.from_private_key_file(server['pkey_path'])
         ssh.connect(server['ip'], port=server['port'], username=server['username'], pkey=private_key, password=server['password'])
-        ssh.exec_command(server['build_votes'])
+        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(server['build_votes'])
+        exit_code = ssh_stdout.channel.recv_exit_status()
+        for line in ssh_stdout:
+            logging.info(f"ssh_stdout: {line.strip()}")
+        logging.info(f"ssh_stderr: {exit_code}")
         ssh.close()
 
 def ensure_directory_exists(directory):
@@ -82,25 +87,10 @@ def move_file_on_error(source_path, destination_folder):
         return f"Error moving map file: {e}"
     return f"Map file '{source_path}' moved to {destination_folder}."
 
-def insert_map_into_db(map_name, category, points, stars, mapper, release_date):
-    try:
-        connection = mysql.connector.connect(
-            host=os.getenv("ANILY_DDRACE_DB_HOST", "localhost"),
-            database=os.getenv("ANILY_DDRACE_DB_SCHEME", "teeworlds"),
-            user=os.getenv("ANILY_DDRACE_DB_USER", "teeworlds"),
-            password=os.getenv("ANILY_DDRACE_DB_PASS", "bigSuperPass")
-        )
-
-        if connection.is_connected():
-            cursor = connection.cursor()
-            sql_insert_query = """INSERT INTO record_maps (Map, Server, Points, Stars, Mapper, Timestamp)
-                                  VALUES (%s, %s, %s, %s, %s, %s)"""
-            cursor.execute(sql_insert_query, (map_name, category, points, stars, mapper, release_date))
-            connection.commit()
-            return None, connection, cursor
-    except Error as e:
-        return e, None, None
-    return None, None, None
+def insert_map_into_db(map_name, category, points, stars, mapper, release_date, cursor):
+    sql_insert_query = """INSERT INTO record_maps (Map, Server, Points, Stars, Mapper, Timestamp)
+                            VALUES (%s, %s, %s, %s, %s, %s)"""
+    cursor.execute(sql_insert_query, (map_name, category, points, stars, mapper, release_date))
 
 def close_db_connection(connection, cursor):
     if connection and connection.is_connected():

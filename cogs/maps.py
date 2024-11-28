@@ -7,8 +7,9 @@ import requests
 import utils
 from typing import Optional
 from permissions import load_permissions, has_permission
+from build_votes import gen_votes, connect_db
 
-ROOT_FOLDER = os.getenv('ANILY_DDRACE_ROOT', '~/servers/ddrace/maps')
+ROOT_FOLDER = os.getenv('ANILY_DDRACE_ROOT', '~/servers/ddrace')
 MAPS_FOLDER = os.path.join(ROOT_FOLDER, f"maps")
 
 CATEGORIES = os.getenv('ANILY_BOT_CATEGORIES', 'souly,anime,joni,other').split(',')
@@ -19,6 +20,7 @@ LOG_CHANNEL = int(os.getenv('ANILY_BOT_LOG_CHANNEL', None))
 WEBHOOK_URL = os.getenv('ANILY_DDRACE_ANNMAP_WEBHOOK_URL', None)
 
 utils.ensure_directory_exists(MAPS_FOLDER)
+config = utils.load_config("remote.json")
 
 class MapCog(commands.Cog):
     def __init__(self, bot):
@@ -58,36 +60,32 @@ class MapCog(commands.Cog):
         map_path = os.path.join(MAPS_FOLDER, f"{category}/{map_name}.map")
         await utils.save_map_file(map_file, map_path)
 
-        config = utils.load_config("remote.json")
         utils.upload_map_to_servers(config['servers'], map_path, f"{category}/{map_name}.map")
+                    
+        db = connect_db()
+        cursor = db.cursor()
 
         if category != 'test':
-            error, connection, cursor = utils.insert_map_into_db(map_name, category, points, stars, mapper, release_date)
-            if error:
-                await self.log_channel.send(f"Error while connecting to MySQL: {error}")
-                move_error = utils.move_file_on_error(map_path, f"{MAPS_FOLDER}/errors/")
-                await self.log_channel.send(move_error)
-                return
-
+            utils.insert_map_into_db(map_name, category, points, stars, mapper, release_date, cursor)
             stars_str = ":star:" * int(stars)
             message = f"\"**{map_name}**\" by **{mapper}** released on **{category}** {stars_str} with **{points}** points."
             data = {"content": message}
             requests.post(WEBHOOK_URL, json=data)
 
-        try:
-            with open(f"{ROOT_FOLDER}/types/{category}/votes.cfg", "a") as vote_file:
-                vote_line = f'add_vote "{map_name}" "sv_reset_file types/{category}/flexreset.cfg; change_map \\"{category}/{map_name}\\""\n'
-                if category == 'other' or category == 'test':
-                    vote_line = f'add_vote "{map_name} | by {mapper}" "sv_reset_file types/{category}/flexreset.cfg; change_map \\"{category}/{map_name}\\""\n'
-                vote_file.write(vote_line)
-            await self.log_channel.send(f"Vote for map '{map_name}' added to '{category}' category.")
-        except OSError as e:
-            await self.log_channel.send(f"Error writing to votes.cfg: {e}")
+        # try:
+        #     with open(f"{ROOT_FOLDER}/types/{category}/votes.cfg", "a") as vote_file:
+        #         vote_line = f'add_vote "{map_name}" "sv_reset_file types/{category}/flexreset.cfg; change_map \\"{category}/{map_name}\\""\n'
+        #         if category == 'other' or category == 'test':
+        #             vote_line = f'add_vote "{map_name} | by {mapper}" "sv_reset_file types/{category}/flexreset.cfg; change_map \\"{category}/{map_name}\\""\n'
+        #         vote_file.write(vote_line)
+        #     await self.log_channel.send(f"Vote for map '{map_name}' added to '{category}' category.")
+        # except OSError as e:
+        #     await self.log_channel.send(f"Error writing to votes.cfg: {e}")
 
         if category != 'test':
-            close_message = utils.close_db_connection(connection, cursor)
-            if close_message:
-                await self.log_channel.send(close_message)
+            cursor.close()
+            db.close()
+            #gen_votes([category,], cursor)
             exec(open(os.path.join(ROOT_FOLDER, f"build_votes.py")).read())
             utils.run_build_votes_servers(config['servers'])
         await interaction.response.send_message(

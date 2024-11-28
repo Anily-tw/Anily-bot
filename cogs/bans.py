@@ -127,7 +127,7 @@ class BanCog(commands.Cog):
         if not active_bans:
             await interaction.response.send_message("No active bans.")
         else:
-            message = "\n".join([f"Player: {ban[0]}, IP: {ban[1]}, Reason: {ban[2]}, Unban Time: {ban[3] if ban[3] else 'Permanent'}" for ban in active_bans])
+            message = "\n".join([f"Player: {ban[0]}, IP: {ban[1]}, Reason: {ban[2]}, Unban Time(UTC): {ban[3] if ban[3] else 'Permanent'}" for ban in active_bans])
             await interaction.response.send_message(message)
 
     @commands.Cog.listener()

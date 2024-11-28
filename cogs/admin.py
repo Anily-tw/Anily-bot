@@ -3,9 +3,13 @@ import nextcord
 from nextcord.ext import commands
 from nextcord import Interaction, SlashOption
 from permissions import load_permissions, save_permissions
+import utils
+import subprocess
 
 ADMIN_ROLE_ID = int(os.getenv('ANILY_BOT_ADMIN_ROLE_ID', 0))
 CATEGORIES = os.getenv('ANILY_BOT_CATEGORIES', 'souly,anime,joni,other').split(',')
+ROOT_FOLDER = os.getenv('ANILY_DDRACE_ROOT', '~/servers/ddrace')
+config = utils.load_config("remote.json")
 
 class AdminCog(commands.Cog):
     def __init__(self, bot):
@@ -17,6 +21,17 @@ class AdminCog(commands.Cog):
             await interaction.response.send_message("You don't have permission to manage map permissions.", ephemeral=True)
             return False
         return True
+    
+    @nextcord.slash_command(name="build_votes", description="Rebuild votes.cfg", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
+    async def build_votes(self, interaction: Interaction):
+        has_perm = await self.cog_check(interaction)
+        if not has_perm:
+            return
+        
+        subprocess.run([os.path.join(ROOT_FOLDER, f"build_votes.py")], shell=True)
+        utils.run_build_votes_servers(config['servers'])
+
+        await interaction.response.send_message("Votes were built on local and remote servers")
 
     @nextcord.slash_command(name="add_permission", description="Grant permission to upload/update maps", guild_ids=[os.getenv('ANILY_BOT_GUILD')])
     async def add_permission(self, interaction: Interaction, 
